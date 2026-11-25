@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#102a43">
+<title>HAISO MAP | 配達管理</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="HAISO MAP">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<style>
+:root{--navy:#102a43;--blue:#1976d2;--bg:#f3f6fa;--card:#fff;--text:#172b4d;--muted:#66788a;--line:#dce4ec;--red:#e5484d;--green:#20966a;--yellow:#d99a16;--cyan:#168aad}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif}header{background:var(--navy);color:white;padding:18px 16px 14px;position:sticky;top:0;z-index:5}header .brand{font-size:21px;font-weight:800;letter-spacing:.08em}header small{display:block;color:#c7d6e5;margin-top:3px}.wrap{max-width:900px;margin:auto;padding:14px 12px 100px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.stat,.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px}.stat b{display:block;font-size:23px}.stat span{font-size:12px;color:var(--muted)}.tabs{display:flex;gap:7px;margin:12px 0;overflow:auto}.tab{border:1px solid var(--line);background:white;border-radius:999px;padding:10px 14px;white-space:nowrap;font-weight:700;color:var(--text)}.tab.active{background:var(--navy);color:white;border-color:var(--navy)}.panel{margin:10px 0}.panel h2{font-size:17px;margin:0 0 12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{margin:8px 0}.field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px}input,select,textarea{width:100%;padding:12px;border:1px solid #cbd5df;border-radius:10px;background:white;color:var(--text);font-size:16px;min-width:0}button,.filebtn{border:0;border-radius:10px;padding:12px 14px;background:var(--navy);color:white;font-size:14px;font-weight:700;cursor:pointer}.secondary{background:#eaf0f6;color:var(--navy)}.danger{background:#fff0f0;color:#b4232c}.success{background:#e9f7f0;color:#14734f}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.actions button{flex:1}.hint{font-size:12px;color:var(--muted);line-height:1.5}.row{display:flex;align-items:center;justify-content:space-between;gap:8px}.item{border-top:1px solid var(--line);padding:12px 0}.item:first-child{border-top:0}.item strong{display:block;font-size:14px;line-height:1.45}.meta{font-size:12px;color:var(--muted);margin-top:4px}.pill{display:inline-block;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800}.s-未配達{background:#ffeded;color:#b4232c}.s-配達完了{background:#e7f7ef;color:#14734f}.s-不在{background:#fff5d9;color:#986400}.s-再配達{background:#e7f5fb;color:#126b8b}.itemtools{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.itemtools select{width:auto;flex:1;min-width:125px;padding:8px;font-size:14px}.itemtools button{padding:8px 10px}.hidden{display:none!important}.empty{text-align:center;color:var(--muted);padding:22px 8px}.bar{height:8px;background:#e8edf2;border-radius:99px;overflow:hidden;margin:8px 0}.bar>i{display:block;height:100%;background:var(--green);width:0}.notice{background:#fff8e6;border:1px solid #f2dfad;padding:10px;border-radius:10px;font-size:12px;line-height:1.5;color:#76520b}.bottom{position:fixed;bottom:0;left:0;right:0;background:#ffffffed;border-top:1px solid var(--line);padding:9px 12px calc(9px + env(safe-area-inset-bottom));display:flex;gap:8px;justify-content:center}.bottom button{max-width:430px;width:100%}@media(max-width:560px){.grid{grid-template-columns:1fr}.wrap{padding-left:10px;padding-right:10px}.stat{padding:10px}.stat b{font-size:21px}}
+
+#routeStops .route-stop{padding:9px 4px;border-bottom:1px solid #dce4ec;min-height:55px}
+.route-controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:7px}
+.route-handle{touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;background:#eaf0f6;color:#102a43;padding:10px 14px;font-size:20px;min-width:55px}
+.route-small{padding:9px 11px;background:#eaf0f6;color:#102a43}
+.route-stop.drag-source{opacity:.45}.route-stop.drag-target{outline:2px solid #1976d2;background:#e8f4ff;border-radius:9px}
+</style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<style>#deliveryMapCanvas{height:360px;border-radius:10px;z-index:0} #deliveryMapPanel{scroll-margin-top:110px} #mapLegend{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+#routeStops .route-stop{padding:9px 4px;border-bottom:1px solid #dce4ec;min-height:55px}
+.route-controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:7px}
+.route-handle{touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;background:#eaf0f6;color:#102a43;padding:10px 14px;font-size:20px;min-width:55px}
+.route-small{padding:9px 11px;background:#eaf0f6;color:#102a43}
+.route-stop.drag-source{opacity:.45}.route-stop.drag-target{outline:2px solid #1976d2;background:#e8f4ff;border-radius:9px}
+</style></head>
+<body>
+<header><div class="brand">HAISO MAP</div><small>宗像市全域｜住所マスター ＋ 毎日の配達管理｜配達地図試作版 v9＋クラウド接続検証</small></header>
+<div class="wrap">
+<section class="panel" style="border-left:4px solid #1976d2" id="cloudPanel"><h2>クラウド接続テスト</h2><p class="hint">ログインとクラウド上の住所件数のみ確認します。住所データの転送・同期・削除は行いません。下の配達管理は従来どおり端末内保存です。</p><form id="cloudForm"><div class="field"><label for="cloudEmail">メールアドレス</label><input id="cloudEmail" type="email" autocomplete="username" required></div><div class="field"><label for="cloudPassword">パスワード</label><input id="cloudPassword" type="password" autocomplete="current-password" required></div><button id="cloudLogin" type="submit">ログインして接続確認</button></form><p id="cloudResult" role="status" style="white-space:pre-wrap;overflow-wrap:anywhere">未接続</p></section>
+<div class="panel" style="border-left:4px solid #1976d2"><strong>公開用アプリ本体・PWA検証版</strong><p class="hint" style="margin-bottom:0">このHTMLには配達先データを埋め込んでいません。住所・メモ・当日配達リストは現在のブラウザ内に保存されます。端末間共有とクラウド同期は未実装です。実際の業務データを入れる前に保存と復元を検証し、毎日JSONバックアップを別の安全な場所へ保管してください。地図タイルと道路検索には外部サービスへの通信が必要です。</p></div>
+ <div class="stats"><div class="stat"><b id="masterCount">0</b><span>住所マスター</span></div><div class="stat"><b id="todayCount">0 / 500</b><span>今日の配達先</span></div><div class="stat"><b id="doneCount">0</b><span>配達完了</span></div></div>
+ <div class="panel" style="margin-top:10px">
+  <div class="row">
+   <div><strong>端末内データ保存</strong><div class="hint" id="storageStatus">保存状態を確認しています…</div></div>
+   <button class="secondary" id="storageCheck">保存状態を確認</button>
+  </div>
+ </div>
+ <div class="tabs"><button class="tab active" data-tab="today">今日の配達</button><button class="tab" data-tab="master">住所マスター</button><button class="tab" data-tab="history">履歴・データ</button></div>
+ <section id="today" class="view">
+  <div class="panel">
+   <h2><label for="pickSearch">配達先を検索・追加</label></h2>
+   <input id="pickSearch" type="search" enterkeyhint="search" placeholder="例：日の里 2-3、建物名 101">
+   <p id="pickStatus" class="hint" role="status"></p>
+   <div id="pickResults"></div>
+   <div class="actions"><button type="button" class="secondary hidden" id="clearPick">検索を消して次へ</button></div>
+  </div>
+  <div class="panel">
+   <h2>新しい配達先をその場で登録</h2>
+   <p class="hint">住所マスターへの保存と、今日の配達リストへの追加を同時に行います。</p>
+   <div class="field"><label>住所 *</label><input id="quickAddress" placeholder="例：宗像市〇〇 1-2-3"></div>
+   <div class="grid"><div class="field"><label>建物名</label><input id="quickBuilding" placeholder="〇〇ハイツ"></div><div class="field"><label>部屋番号</label><input id="quickRoom" placeholder="101"></div></div>
+   <div class="grid"><div class="field"><label>エリア</label><input id="quickArea" placeholder="田熊・東郷・日の里など"></div><div class="field"><label>配達メモ</label><input id="quickMemo" placeholder="入口・置き配場所など"></div></div>
+   <button id="quickAdd" style="width:100%">住所マスター＋今日の配達に登録</button>
+  </div>
+  <div class="panel"><div class="row"><h2>今日の配達リスト</h2><span class="pill" style="background:#edf2f7;color:#334e68" id="todayDate"></span></div><div class="bar"><i id="progress"></i></div><div class="hint" id="progressText">配達先を追加してください。</div>
+   <div class="field"><label>今日の配達先を検索</label><input id="todaySearch" placeholder="住所・建物名で絞り込み"></div>
+   <div class="field"><label>表示する状態</label><select id="statusFilter"><option value="すべて">すべて</option><option>未配達</option><option>配達完了</option><option>不在</option><option>再配達</option></select></div>
+   <button type="button" class="secondary" id="openDeliveryMap">今日の配達地図</button>
+   <div id="deliveryMapPanel" class="hidden">
+    <div id="mapLegend"><span class="pill s-未配達">未配達</span><span class="pill s-配達完了">配達完了</span><span class="pill s-不在">不在</span><span class="pill s-再配達">再配達</span></div>
+    <div id="deliveryMapCanvas" aria-label="配達先の地図"></div>
+    <div class="field"><label for="routeMode">配達順の設定</label><select id="routeMode"><option value="auto">自動（走行時間の提案を優先）</option><option value="manual">手動（ドラッグ・上下ボタン）</option></select></div><p class="hint" id="routeModeHint">自動はOSRMの走行時間による提案を優先します。未取得時は直線距離の仮提案です。</p><div class="actions"><button type="button" class="secondary" id="chooseRouteStart">配達順を提案</button><button type="button" class="secondary hidden" id="clearRoute">提案を消す</button></div>
+    <section id="deliveryRoute" class="hidden" aria-label="配達順の提案"><p id="routeStatus" class="hint" role="status"></p><details id="roadRouteDetails"><summary>道路の走行時間で並べる</summary>
+     <p class="hint">試作機能です。公開テストサーバーは最大20件に制限しています。専用OSRMの実際の上限はサーバー設定と性能によります。OSRM対応HTTPS接続先へ、出発地点と配達先の座標を送信します。走行時間から次の地点を順に選ぶ簡易提案で、全体の最短経路は保証しません。</p>
+     <label for="roadEndpoint">OSRM接続先</label>
+     <input id="roadEndpoint" type="url" placeholder="https://…" autocomplete="off">
+     <button type="button" class="secondary" id="roadRoute">走行時間で提案</button>
+     <p id="roadStatus" class="hint" role="status"></p>
+    </details><ol id="routeStops"></ol></section>
+    <p id="deliveryMapStatus" class="hint" role="status"></p>
+    <div class="actions"><button type="button" class="secondary hidden" id="findMapLocation">住所から位置を探す</button><button type="button" class="hidden" id="saveMapCandidate">この候補を保存</button></div>
+    <p id="mapLookupStatus" class="hint" role="status"></p>
+    <div class="actions"><button type="button" class="secondary" id="mapDemo">テストピンを表示</button><button type="button" class="secondary hidden" id="cancelMapLocation">位置設定を中止</button></div>
+   </div>
+   <div id="todayList"></div>
+   <div class="actions"><button class="secondary" id="exportToday">今日のリストをCSV出力</button><button class="danger" id="finishDay">今日の履歴を保存して新規開始</button></div>
+  </div>
+ </section>
+ <section id="master" class="view hidden">
+  <div class="panel"><h2>住所を新規登録</h2><div class="field"><label>住所 *</label><input id="address" placeholder="例：宗像市〇〇 1-2-3"></div><div class="grid"><div class="field"><label>建物名</label><input id="building" placeholder="〇〇ハイツ"></div><div class="field"><label>部屋番号</label><input id="room" placeholder="101"></div></div><div class="grid"><div class="field"><label>エリア</label><input id="area" list="areas" placeholder="町名・地区名"><datalist id="areas"><option>赤間</option><option>赤間駅周辺</option><option>東郷</option><option>田熊</option><option>日の里</option><option>田久</option><option>平井</option><option>自由ヶ丘</option><option>河東</option><option>須恵</option><option>大井</option><option>大井台</option><option>大井南</option><option>村山田</option><option>南郷</option><option>朝町</option><option>池田</option><option>鐘崎</option><option>神湊</option><option>武丸</option><option>吉留</option><option>用山</option><option>その他</option></datalist></div><div class="field"><label>配達メモ</label><input id="memo" placeholder="入口・駐車場所など"></div></div><button id="addAddress" style="width:100%;margin-top:5px">住所マスターに登録</button><p class="hint">住所・建物名・部屋番号が一致する場合は重複登録を防ぎます。住所は宗像市内を想定していますが、登録時の住所確認は利用者自身で行ってください。</p></div>
+  <div class="panel"><h2>住所マスターを検索</h2><input id="masterSearch" placeholder="住所・建物名・エリアで検索"><div class="row" style="margin-top:10px"><span class="hint" id="masterShown">登録住所 0件</span><button class="secondary" id="exportMaster">マスターCSV出力</button></div><div id="masterList"></div></div>
+ </section>
+ <section id="history" class="view hidden">
+  <div class="panel"><h2>CSV取り込み</h2><p class="hint">住所,建物名,部屋番号,エリア,メモ の列に対応。UTF-8またはExcelで保存したCSVを選択してください。1行目は見出しとして扱います。</p><input type="file" id="csvFile" accept=".csv,text/csv"><div class="actions"><button id="importCsv" style="width:100%">住所マスターへ取り込む</button></div><p class="hint" id="importResult">CSVを選択してください。</p></div>
+  <div class="panel"><h2>配達履歴</h2><div id="historyList"></div></div>
+<div class="panel"><h2>データのバックアップ</h2><p class="hint">住所マスター・今日の配達・履歴をJSONで書き出せます。別の端末へ移す場合にも利用してください。</p><div class="actions"><button id="backup">バックアップを書き出す</button><label class="filebtn secondary" style="text-align:center">バックアップを復元<input type="file" id="restore" accept=".json,application/json" hidden></label></div><p class="hint">この試作版はブラウザ内にデータを保存します。通常・予備の2か所にブラウザ内保存し、読み込み異常時の上書きを防ぎます。ただし両方ともSafariの保存領域にあり、Safari再起動後に保持される保証はありません。JSONバックアップを「ファイル」に別途保存してください。Safariの履歴・Webサイトデータ消去や端末故障で消える可能性があるため、毎日JSONバックアップを保存してください。クラウド同期・他人との共有は未実装です。公開サイトのドメインを変えるとブラウザ保存データは自動移行されません。</p></div>
+ </section>
+ <div class="notice">試作版の地図機能：各配達先からGoogleマップのナビを開けます。配達地図では位置を設定した当日の配達先を表示します。住所から位置候補を探せます。配達順は直線距離を使って提案します。走行時間による提案はOSRM接続先を設定して試せます。</div>
+</div>
+<div class="bottom"><button id="toAdd">＋ 新しい住所を登録</button></div>
+<script>
+const KEY='haisoMapPrototypeV1';
+let db={master:[],today:{date:localDate(),items:[]},history:[]};
+let recoveryBlocked=false;
+const MIRROR_KEY=KEY+'_mirror';
+const SEEN_KEY=KEY+'_everSaved';
+function localDate(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function validData(x){return x&&Array.isArray(x.master)&&x.today&&Array.isArray(x.today.items)&&Array.isArray(x.history)}
+function load(){
+ try{
+  const raw=localStorage.getItem(KEY),mirror=localStorage.getItem(MIRROR_KEY);
+  let recovered=false;
+  if(raw){
+   try{const x=JSON.parse(raw);if(!validData(x))throw Error('形式不正');db=x}
+   catch(e){if(mirror){const x=JSON.parse(mirror);if(!validData(x))throw Error('予備データも不正');db=x;recovered=true}
+   else throw e}
+  }else if(mirror){const x=JSON.parse(mirror);if(!validData(x))throw Error('予備データ不正');db=x;recovered=true}
+  else if(localStorage.getItem(SEEN_KEY)==='1'){recoveryBlocked=true;setStorageStatus('以前の保存記録がありますがデータが見つかりません。上書きを停止しました。',false)}
+  if(recovered){localStorage.setItem(KEY,JSON.stringify(db));setStorageStatus('予備保存からデータを読み込みました。JSONバックアップを保存してください。',true)}
+  else if(!recoveryBlocked)setStorageStatus(raw?'保存データを読み込みました。':'初回起動・または別の保存領域です。住所登録後はJSONバックアップを保存してください。',true);
+ }catch(e){console.warn(e);recoveryBlocked=true;setStorageStatus('保存データの読み込みに失敗。上書きを停止しました。',false)}
+ if(!db.today||!Array.isArray(db.today.items))db.today={date:localDate(),items:[]};
+ if(db.today.date!==localDate()&&db.today.items.length===0)db.today.date=localDate();
+}
+function checkStorage(){try{const testKey=KEY+'_test';const testValue='check_'+Date.now();localStorage.setItem(testKey,testValue);const ok=localStorage.getItem(testKey)===testValue;localStorage.removeItem(testKey);if(!ok)throw Error('確認値が一致しません');setStorageStatus('保存領域は利用できます。登録データは端末・ブラウザ内保存です。',true);alert('保存領域は利用できます。※実際の住所データのバックアップが取れたことを示すものではありません。')}catch(e){console.error(e);setStorageStatus('保存領域を利用できません。設定を確認してください。',false);alert('保存領域を確認できませんでした。プライベートブラウズやブラウザ設定を確認してください。')}}
+function setStorageStatus(message,ok=true){const el=$('storageStatus');if(el){el.textContent=message;el.style.color=ok?'#14734f':'#b4232c'}}
+function save(){
+ if(recoveryBlocked){alert('保存データを保護するため書き込みを停止しています。JSONバックアップを復元してください。');return false}
+ try{
+  const payload=JSON.stringify(db);
+  localStorage.setItem(MIRROR_KEY,payload);
+  if(localStorage.getItem(MIRROR_KEY)!==payload)throw Error('予備保存失敗');
+  localStorage.setItem(KEY,payload);
+  if(localStorage.getItem(KEY)!==payload)throw Error('通常保存失敗');
+  localStorage.setItem(SEEN_KEY,'1');
+  setStorageStatus('通常・予備の2か所に保存しました。Safari再起動後の保持は未確認です。JSONバックアップも保存してください。',true);
+  return true;
+ }catch(e){console.error(e);setStorageStatus('保存失敗：JSONバックアップを確認してください。',false);alert('保存できませんでした。');return false}
+}
+const $=id=>document.getElementById(id);const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function makeId(prefix){let token;if(typeof crypto!=='undefined'&&crypto.randomUUID){token=crypto.randomUUID()}else{token=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,12)}return prefix+token}
+function keyOf(x){return [x.address,x.building,x.room].map(v=>String(v||'').trim().replace(/\s+/g,'').toLowerCase()).join('|')}
+function statusClass(s){return 's-'+s}
+function validLocation(location) {
+ return Array.isArray(location) && location.length === 2 &&
+ location.every(Number.isFinite) && Math.abs(location[0]) <= 85 &&
+ Math.abs(location[1]) <= 180;
+}
+function matchingLocationMaster(entry) {
+ const key = quickAddressKey(entry);
+ return db.master.find(master => quickAddressKey(master) === key &&
+   (master.id === (entry.masterId ?? entry.id) || !validLocation(master.location)))
+   ?? db.master.find(master => quickAddressKey(master) === key);
+}
+function locationKey(entry) {
+ return JSON.stringify([entry.masterId ?? entry.id, quickAddressKey(entry)]);
+}
+function rememberedLocation(entry) {
+ const local = matchingLocationMaster(entry)?.location;
+ const saved = db.cloudLocations?.[locationKey(entry)];
+ const location = validLocation(local) ? local : saved;
+ return validLocation(location) ? [...location] : undefined;
+}
+function rememberDeliveryLocation(item, location) {
+ const master = matchingLocationMaster(item);
+ if (master) {
+   const previous = master.location;
+   master.location = [...location];
+   return () => { master.location = previous; };
+ }
+ const previous = db.cloudLocations;
+ db.cloudLocations = {...previous, [locationKey(item)]: [...location]};
+ return () => { db.cloudLocations = previous; };
+}
+function mapsUrl(x){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent([x.address,x.building,x.room].filter(Boolean).join(' '))}
+function render(){ $('masterCount').textContent=db.master.length.toLocaleString();$('todayCount').textContent=`${db.today.items.length} / 500`;$('doneCount').textContent=db.today.items.filter(x=>x.status==='配達完了').length;$('todayDate').textContent=db.today.date;
+ const n=db.today.items.length,d=db.today.items.filter(x=>x.status==='配達完了').length;$('progress').style.width=n?`${d/n*100}%`:'0%';$('progressText').textContent=n?`配達完了 ${d}件 ／ 残り ${n-d}件`:'配達先を追加してください。';renderPick();renderToday();renderMaster();renderHistory();}
+let quickCloudAddresses = [];
+function normalizeSearch(value) {
+ return String(value ?? '').normalize('NFKC').toLowerCase()
+   .replace(/[‐‑‒–—−]/g, '-').replace(/\s+/g, '');
+}
+function normalizeAddress(value) {
+ return normalizeSearch(value).replace(/^(?:福岡県)?宗像市/, '')
+   .replace(/(\d+)(?:丁目|番地|番)(?=\d)/g, '$1-')
+   .replace(/(\d+)号$/, '$1');
+}
+function quickAddressKey(entry) {
+ return [normalizeAddress(entry.address),
+   normalizeSearch(entry.building), normalizeSearch(entry.room)].join('|');
+}
+function renderPick() {
+ const input = $('pickSearch');
+ const query = input.value.trim();
+ const results = $('pickResults');
+ results.replaceChildren();
+ $('clearPick').classList.toggle('hidden', !query);
+ if (!query) return;
+ const terms = query.normalize('NFKC').split(/\s+/).map(normalizeAddress).filter(Boolean);
+ const added = new Set(db.today.items.map(quickAddressKey));
+ const seen = new Set();
+ const matches = [...db.master, ...quickCloudAddresses].filter(entry => {
+   const key = quickAddressKey(entry);
+   if (seen.has(key)) return false;
+   seen.add(key);
+   const searchable = normalizeAddress(entry.address) + '|' + normalizeSearch([entry.building, entry.room, entry.area].join(' '));
+   return terms.every(term => searchable.includes(term));
+ });
+ if (!matches.length) {
+   const message = document.createElement('p');
+   message.className = 'hint';
+   message.textContent = '一致する登録済みの住所がありません。';
+   results.append(message);
+ }
+ for (const entry of matches.slice(0, 20)) {
+   const row = document.createElement('div');
+   row.className = 'item row';
+   const label = document.createElement('strong');
+   label.textContent = [entry.address, entry.building, entry.room].filter(Boolean).join(' ／ ');
+   const button = document.createElement('button');
+   button.type = 'button';
+   button.disabled = added.has(quickAddressKey(entry));
+   button.textContent = button.disabled ? '追加済み' : '今日に追加';
+   button.onclick = () => {
+     const status = $('pickStatus');
+     if (recoveryBlocked || db.today.items.length >= 500) {
+       status.textContent = recoveryBlocked ? '保存保護中です。' : '今日の配達は最大500件です。';
+       return;
+     }
+     if (db.today.items.some(item => quickAddressKey(item) === quickAddressKey(entry))) return;
+     db.today.items.push({...entry, location: rememberedLocation(entry), id: makeId('d'), masterId: entry.id, status: '未配達'});
+     if (!save()) {
+       db.today.items.pop();
+       status.textContent = '端末への保存に失敗しました。';
+       return;
+     }
+     render();
+     status.textContent = entry.address + 'を今日の配達に追加しました。';
+   };
+   row.append(label, button);
+   results.append(row);
+ }
+ const create = document.createElement('button');
+ create.type = 'button';
+ create.className = 'secondary';
+ create.textContent = 'この入力で新規登録';
+ create.onclick = () => {
+   const address = $('quickAddress');
+   if (address.value.trim() && !window.confirm('入力済みの住所を置き換えますか？')) return;
+   const value = query.normalize('NFKC');
+   address.value = /^宗像市/.test(value) ? '福岡県' + value :
+     /^(?:北海道|東京都|大阪府|京都府|.{2,4}県)/.test(value) ? value : '福岡県宗像市' + value;
+   address.focus();
+   address.scrollIntoView({block: 'center'});
+ };
+ results.append(create);
+}
+function renderToday(){const q=$('todaySearch').value.trim().toLowerCase(),f=$('statusFilter').value;const list=db.today.items.filter(x=>(f==='すべて'||x.status===f)&&(!q||[x.address,x.building,x.room,x.area].join(' ').toLowerCase().includes(q)));$('todayList').innerHTML=list.map(x=>`<div class="item"><div class="row"><strong>${esc(x.address)}</strong><span class="pill ${statusClass(x.status)}">${esc(x.status)}</span></div><div class="meta">${esc([x.building,x.room,x.area].filter(Boolean).join(' ／ '))}${x.memo?' · '+esc(x.memo):''}</div><div class="itemtools"><select data-status="${x.id}"><option ${x.status==='未配達'?'selected':''}>未配達</option><option ${x.status==='配達完了'?'selected':''}>配達完了</option><option ${x.status==='不在'?'selected':''}>不在</option><option ${x.status==='再配達'?'selected':''}>再配達</option></select><button class="secondary" data-map-location="${x.id}">地図の位置を設定</button><button class="secondary" data-nav="${x.id}">Googleマップ</button><button class="danger" data-remove="${x.id}">当日リストから外す</button></div></div>`).join('')||'<div class="empty">該当する配達先はありません</div>';document.querySelectorAll('[data-status]').forEach(s=>s.onchange=()=>{const x=db.today.items.find(i=>i.id===s.dataset.status);if(recoveryBlocked){alert('保護中です');render();return}if(x)x.status=s.value;save();render()});document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{const x=db.today.items.find(i=>i.id===b.dataset.nav);if(x)window.open(mapsUrl(x),'_blank')});document.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{if(recoveryBlocked){alert('保護中です');return}db.today.items=db.today.items.filter(i=>i.id!==b.dataset.remove);save();render()});}
+function renderMaster(){const q=$('masterSearch').value.trim().toLowerCase();const all=db.master.filter(x=>!q||[x.address,x.building,x.room,x.area,x.memo].join(' ').toLowerCase().includes(q));$('masterShown').textContent=`登録住所 ${db.master.length.toLocaleString()}件 ／ 表示 ${all.length}件`;$('masterList').innerHTML=all.slice(0,100).map(x=>`<div class="item"><strong>${esc(x.address)}</strong><div class="meta">${esc([x.building,x.room,x.area].filter(Boolean).join(' ／ '))}${x.memo?' · '+esc(x.memo):''}</div><div class="itemtools"><button class="secondary" data-addtoday="${x.id}">今日に追加</button><button class="secondary" data-edit="${x.id}">編集</button><button class="danger" data-del="${x.id}">削除</button></div></div>`).join('')||'<div class="empty">住所が登録されていません</div>';if(all.length>100)$('masterList').insertAdjacentHTML('beforeend','<p class="hint">表示は先頭100件までです。検索で絞り込んでください。</p>');document.querySelectorAll('[data-addtoday]').forEach(b=>b.onclick=()=>addToToday(b.dataset.addtoday));document.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(recoveryBlocked){alert('保護中です');return}if(confirm('この住所をマスターから削除しますか？当日リスト・履歴の記録は残ります。')){db.master=db.master.filter(x=>x.id!==b.dataset.del);save();render()}});document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editMaster(b.dataset.edit));}
+function renderHistory(){$('historyList').innerHTML=db.history.slice().reverse().map(h=>`<div class="item"><strong>${esc(h.date)}　${h.items.length}件</strong><div class="meta">完了 ${h.items.filter(x=>x.status==='配達完了').length} ／ 不在 ${h.items.filter(x=>x.status==='不在').length} ／ 再配達 ${h.items.filter(x=>x.status==='再配達').length}</div><button class="secondary" data-hcsv="${h.date}" style="margin-top:7px">この日のCSV</button></div>`).join('')||'<div class="empty">履歴はまだありません</div>';document.querySelectorAll('[data-hcsv]').forEach(b=>b.onclick=()=>{const h=db.history.find(x=>x.date===b.dataset.hcsv);if(h)downloadCsv(h.items,`haiso_${h.date}.csv`)});}
+function addToToday(id){if(recoveryBlocked){alert('保護中のため登録できません');return}if(db.today.items.length>=500){alert('当日配達リストは最大500件です。');return}if(db.today.items.some(x=>x.masterId===id)){alert('この住所は今日のリストに登録済みです。');return}const m=db.master.find(x=>x.id===id);if(!m)return;db.today.items.push({...m,location:rememberedLocation(m),id:makeId('d'),masterId:m.id,status:'未配達'});save();render();}
+function clearForm(){['address','building','room','area','memo'].forEach(id=>$(id).value='')}
+function addAddress(){if(recoveryBlocked){alert('保護中のため登録できません');return}const x={address:$('address').value.trim(),building:$('building').value.trim(),room:$('room').value.trim(),area:$('area').value.trim()||'未分類',memo:$('memo').value.trim()};if(!x.address){alert('住所を入力してください。');return}const duplicate=db.master.find(m=>keyOf(m)===keyOf(x));if(duplicate){alert('同じ住所・建物名・部屋番号が登録済みです。既存の住所を検索してください。');return}x.id=makeId('m');x.createdAt=new Date().toISOString();db.master.push(x);save();clearForm();render();alert('住所マスターに登録しました。')}
+function editMaster(id){if(recoveryBlocked){alert('保護中のため編集できません');return}const x=db.master.find(m=>m.id===id);if(!x)return;const a=prompt('住所',x.address);if(a===null)return;const b=prompt('建物名',x.building||'');if(b===null)return;const r=prompt('部屋番号',x.room||'');if(r===null)return;const ar=prompt('エリア',x.area||'');if(ar===null)return;const me=prompt('配達メモ',x.memo||'');if(me===null)return;const next={...x,address:a.trim(),building:b.trim(),room:r.trim(),area:ar.trim(),memo:me.trim()};if(!next.address){alert('住所は必須です');return}if(db.master.some(m=>m.id!==id&&keyOf(m)===keyOf(next))){alert('同じ住所が既に登録されています');return}if(normalizeAddress(x.address)!==normalizeAddress(next.address)) delete next.location;delete x.location;Object.assign(x,next);save();render()}
+function download(name,content,type='text/plain'){const blob=new Blob([content],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500)}
+function csvCell(v){return '"'+String(v??'').replace(/"/g,'""')+'"'}function downloadCsv(items,name){const rows=[['住所','建物名','部屋番号','エリア','配達メモ','配達状況'],...items.map(x=>[x.address,x.building,x.room,x.area,x.memo,x.status||''])];download(name,'\uFEFF'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n'),'text/csv;charset=utf-8')}
+function parseCsv(text){const rows=[];let row=[],v='',q=false;for(let i=0;i<text.length;i++){const c=text[i];if(q){if(c==='"'&&text[i+1]==='"'){v+='"';i++}else if(c==='"')q=false;else v+=c}else{if(c==='"')q=true;else if(c===','){row.push(v);v=''}else if(c==='\n'){row.push(v.replace(/\r$/,''));rows.push(row);row=[];v=''}else v+=c}}if(v.length||row.length){row.push(v.replace(/\r$/,''));rows.push(row)}return rows}
+function importCsv(){if(recoveryBlocked){alert('保護中のため取り込めません');return}const f=$('csvFile').files[0];if(!f){$('importResult').textContent='CSVファイルを選択してください。';return}const reader=new FileReader();reader.onload=()=>{try{let rows=parseCsv(String(reader.result).replace(/^\uFEFF/,''));if(rows.length<2)throw Error('データ行がありません');const head=rows.shift().map(s=>s.trim().toLowerCase());const find=(names,def)=>{for(const n of names){const i=head.indexOf(n);if(i>=0)return i}return def};const ix={address:find(['住所','address'],0),building:find(['建物名','建物','building'],1),room:find(['部屋番号','号室','room'],2),area:find(['エリア','地区','area'],3),memo:find(['配達メモ','メモ','memo'],4)};let added=0,dup=0,skip=0;for(const r of rows){const x={address:(r[ix.address]||'').trim(),building:(r[ix.building]||'').trim(),room:(r[ix.room]||'').trim(),area:(r[ix.area]||'').trim()||'未分類',memo:(r[ix.memo]||'').trim()};if(!x.address){skip++;continue}if(db.master.some(m=>keyOf(m)===keyOf(x))){dup++;continue}x.id=makeId('m');x.createdAt=new Date().toISOString();db.master.push(x);added++}save();render();$('importResult').textContent=`取り込み完了：追加 ${added}件／重複 ${dup}件／住所なし ${skip}件`;}catch(e){$('importResult').textContent='読み込みエラー：'+e.message}};reader.readAsText(f,'UTF-8')}
+function switchTab(tab){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('hidden',v.id!==tab));document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));$('toAdd').classList.toggle('hidden',tab!=='master')}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));$('toAdd').onclick=()=>{switchTab('master');$('address').focus();window.scrollTo({top:0,behavior:'smooth'})};$('addAddress').onclick=()=>{try{addAddress()}catch(e){console.error(e);alert('登録処理でエラーが発生しました。入力内容を確認して、もう一度お試しください。')}};$('pickSearch').oninput=()=>{ $('pickStatus').textContent = ''; renderPick(); };
+$('clearPick').onclick=()=>{ $('pickSearch').value = ''; $('pickSearch').oninput(); $('pickSearch').focus(); };$('todaySearch').oninput=renderToday;$('statusFilter').onchange=renderToday;$('masterSearch').oninput=renderMaster;$('exportMaster').onclick=()=>downloadCsv(db.master,'haiso_address_master.csv');$('exportToday').onclick=()=>downloadCsv(db.today.items,'haiso_today_'+db.today.date+'.csv');$('importCsv').onclick=importCsv;
+$('quickAdd').onclick=()=>{try{
+ if(recoveryBlocked){alert('保護中のため登録できません');return}
+ const x={address:$('quickAddress').value.trim(),building:$('quickBuilding').value.trim(),room:$('quickRoom').value.trim(),area:$('quickArea').value.trim()||'未分類',memo:$('quickMemo').value.trim()};
+ if(!x.address){alert('住所を入力してください。');$('quickAddress').focus();return}
+ if(db.today.items.length>=500){alert('今日の配達リストは最大500件です。');return}
+ if(db.today.items.some(v=>quickAddressKey(v)===quickAddressKey(x))){alert('この住所は今日のリストに登録済みです。');return}
+ let m=db.master.find(v=>quickAddressKey(v)===quickAddressKey(x));
+ const newMaster = !m;
+ if(!m){m={...x,id:makeId('m'),createdAt:new Date().toISOString()};db.master.push(m)}
+ db.today.items.push({...m,location:rememberedLocation(m),id:makeId('d'),masterId:m.id,status:'未配達'});
+ if (!save()) {
+   db.today.items.pop();
+   if (newMaster) db.master.pop();
+   alert('端末への保存に失敗しました。');
+   return;
+ }
+ $('pickSearch').value = '';
+ $('pickStatus').textContent = '';
+ ['quickAddress','quickBuilding','quickRoom','quickArea','quickMemo'].forEach(id=>$(id).value='');render();
+ $('pickStatus').textContent = m.address + 'を住所マスターと今日の配達に登録しました。';
+ $('pickSearch').focus();
+ }catch(e){console.error(e);alert('登録に失敗しました。Safariでページを開き直し、もう一度お試しください。')}};
+ $('finishDay').onclick=()=>{if(recoveryBlocked){alert('保護中のため操作できません');return}if(!db.today.items.length){alert('今日の配達先がありません');return}if(!confirm(`${db.today.date}の${db.today.items.length}件を履歴に保存し、新しい当日リストを開始しますか？`))return;db.history.push({date:db.today.date,items:db.today.items.map(x=>({...x}))});db.today={date:localDate(),items:[]};save();render();alert('履歴を保存しました。')};$('backup').onclick=()=>download('haiso_map_backup_'+localDate()+'.json',JSON.stringify(db,null,2),'application/json');$('restore').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!Array.isArray(x.master)||!x.today||!Array.isArray(x.history))throw Error('形式が違います');if(!confirm('現在のデータをバックアップの内容で置き換えますか？'))return;const previous=db;db=x;recoveryBlocked=false;if(save()){render();alert('復元しました')}else{db=previous;recoveryBlocked=true}}catch(err){alert('復元できません：'+err.message)}};r.readAsText(f)};
+$('storageCheck').onclick=checkStorage;load();render();
+</script>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script><script>
+const deliveryColors = {'未配達':'#b4232c','配達完了':'#14734f','不在':'#986400','再配達':'#126b8b'};
+const mapSamples = Object.keys(deliveryColors).map((status, index) => ({
+ address: 'テスト地点 ' + (index + 1), status,
+ location: [33.80 + index * 0.008, 130.53 + index * 0.008]
+}));
+let deliveryMap, deliveryPins, pendingLocation, demoVisible = false;
+let mapCandidate, lookupSequence = 0;
+let routeStart = null, choosingRouteStart = false;
+function straightLineDistanceScore(from, to) {
+ const radians = Math.PI / 180;
+ const latDifference = (to[0] - from[0]) * radians;
+ const lngDifference = (to[1] - from[1]) * radians;
+ return Math.sin(latDifference / 2) ** 2 +
+   Math.cos(from[0] * radians) * Math.cos(to[0] * radians) * Math.sin(lngDifference / 2) ** 2;
+}
+function suggestDeliveryOrder(start, items) {
+ const remaining = items.filter(item => item.status !== '配達完了' && validLocation(item.location));
+ const ordered = [];
+ let current = start;
+ while (remaining.length) {
+   let nearest = 0;
+   let best = Infinity;
+   remaining.forEach((item, index) => {
+     const score = straightLineDistanceScore(current, item.location);
+     if (score < best) { best = score; nearest = index; }
+   });
+   const [next] = remaining.splice(nearest, 1);
+   ordered.push(next);
+   current = next.location;
+ }
+ return ordered;
+}
+function drivingDirectionsUrl(item) {
+ const params = new URLSearchParams({
+   api: '1', destination: item.location.join(','), travelmode: 'driving', dir_action: 'navigate'
+ });
+ return 'https://www.google.com/maps/dir/?' + params.toString();
+}
+let roadSuggestion = null;
+let routeMode = 'auto';
+function manualEligibleItems() {
+ return db.today.items.filter(item => item.status !== '配達完了' && validLocation(item.location));
+}
+function moveManualStopTo(sourceId, targetId) {
+ if (recoveryBlocked || sourceId === targetId) return;
+ const original = [...db.today.items];
+ const eligible = manualEligibleItems();
+ const source = eligible.findIndex(x => String(x.id) === String(sourceId));
+ const target = eligible.findIndex(x => String(x.id) === String(targetId));
+ if (source < 0 || target < 0 || source === target) return;
+ const [moved] = eligible.splice(source, 1);
+ eligible.splice(target, 0, moved);
+ let index = 0;
+ db.today.items = original.map(x => (x.status !== '配達完了' && validLocation(x.location)) ? eligible[index++] : x);
+ if (!save()) {db.today.items = original; return;}
+ render(); updateDeliveryMap();
+}
+function attachManualDrag(handle, row, id) {
+ handle.addEventListener('pointerdown', event => {
+  if (event.button !== 0 || routeMode !== 'manual') return;
+  event.preventDefault();
+  const pointerId = event.pointerId;
+  let targetId = null;
+  handle.setPointerCapture(pointerId);
+  row.classList.add('drag-source');
+  const clear = () => document.querySelectorAll('#routeStops .drag-target').forEach(x => x.classList.remove('drag-target'));
+  const move = e => {
+   if (e.pointerId !== pointerId) return;
+   clear();
+   const other = document.elementFromPoint(e.clientX,e.clientY)?.closest('#routeStops .route-stop');
+   targetId = other && other.dataset.stopId !== String(id) ? other.dataset.stopId : null;
+   if (targetId) other.classList.add('drag-target');
+  };
+  const finish = e => {
+   if (e.pointerId !== pointerId) return;
+   handle.removeEventListener('pointermove',move);
+   handle.removeEventListener('pointerup',finish);
+   handle.removeEventListener('pointercancel',cancel);
+   row.classList.remove('drag-source');clear();
+   if(targetId) moveManualStopTo(id,targetId);
+  };
+  const cancel = e => {
+   if (e.pointerId !== pointerId) return;
+   handle.removeEventListener('pointermove',move);
+   handle.removeEventListener('pointerup',finish);
+   handle.removeEventListener('pointercancel',cancel);
+   row.classList.remove('drag-source');clear();
+  };
+  handle.addEventListener('pointermove',move);
+  handle.addEventListener('pointerup',finish);
+  handle.addEventListener('pointercancel',cancel);
+ });
+}
+function moveManualStop(id, delta) {
+ if (recoveryBlocked) { alert('保存保護中のため変更できません。'); return; }
+ const eligible = manualEligibleItems();
+ const index = eligible.findIndex(item => item.id === id);
+ const target = index + delta;
+ if (index < 0 || target < 0 || target >= eligible.length) return;
+ const first = db.today.items.indexOf(eligible[index]);
+ const second = db.today.items.indexOf(eligible[target]);
+ [db.today.items[first], db.today.items[second]] = [db.today.items[second], db.today.items[first]];
+ if (!save()) {
+  [db.today.items[first], db.today.items[second]] = [db.today.items[second], db.today.items[first]];
+  return;
+ }
+ render();
+ updateDeliveryMap();
+}
+$('routeMode').onchange = () => {
+ routeMode = $('routeMode').value;
+ $('routeModeHint').textContent = routeMode === 'manual'
+  ? '手動モード：☰を指で押さえて移動するか、上下ボタンで並べ替えます。順番は端末内に保存します。'
+  : '自動モード：OSRMで取得した走行時間を優先します。未取得時は直線距離による仮提案です。';
+ $('roadRouteDetails').classList.toggle('hidden', routeMode === 'manual');
+ updateDeliveryMap();
+};
+function orderByDriveTime(durations, items) {
+ const size = items.length + 1;
+ if (!Array.isArray(durations) || durations.length !== size ||
+     durations.some(row => !Array.isArray(row) || row.length !== size)) {
+   throw new Error('走行時間の形式が正しくありません。');
+ }
+ const remaining = new Set(items.map((_, index) => index + 1));
+ const ordered = [];
+ let current = 0;
+ let seconds = 0;
+ while (remaining.size) {
+   let next = null;
+   let best = Infinity;
+   for (const index of remaining) {
+     const duration = durations[current][index];
+     if (Number.isFinite(duration) && duration >= 0 && duration < best) {
+       best = duration;
+       next = index;
+     }
+   }
+   if (next === null) throw new Error('一部の地点に車で到達できる経路が見つかりませんでした。');
+   ordered.push(items[next - 1]);
+   remaining.delete(next);
+   seconds += best;
+   current = next;
+ }
+ return {ordered, seconds};
+}
+function roadRouteKey(start, items) {
+ return JSON.stringify([start, items.map(item => [item.id, item.location])]);
+}
+function encodeRoadCoordinates(points) {
+ let previous = [0, 0];
+ return points.map(point => point.map((coordinate, axis) => {
+   const rounded = Math.round(coordinate * 1000000);
+   const delta = rounded - previous[axis];
+   previous[axis] = rounded;
+   let value = delta < 0 ? -delta * 2 - 1 : delta * 2;
+   let encoded = '';
+   while (value >= 32) {
+     encoded += String.fromCharCode((value % 32) + 95);
+     value = Math.floor(value / 32);
+   }
+   return encoded + String.fromCharCode(value + 63);
+ }).join('')).join('');
+}
+$('roadRoute').onclick = async () => {
+ const status = $('roadStatus');
+ if (!routeStart || choosingRouteStart || demoVisible || pendingLocation) return;
+ const items = db.today.items.filter(item => item.status !== '配達完了' && validLocation(item.location));
+ if (!items.length || items.length > 500) {
+   status.textContent = '走行時間による提案は位置設定済みの配達先1〜500件が対象です。';
+   return;
+ }
+ let endpoint;
+ try {
+   endpoint = new URL($('roadEndpoint').value.trim());
+   if (endpoint.protocol !== 'https:' || endpoint.username || endpoint.password || endpoint.search || endpoint.hash) throw Error();
+ } catch {
+   status.textContent = 'OSRMのHTTPS接続先を入力してください。';
+   return;
+ }
+ const publicEndpoint = ['routing.openstreetmap.de', 'router.project-osrm.org'].includes(endpoint.hostname.toLowerCase().replace(/[.]$/, ''));
+ if (publicEndpoint && items.length > 20) {
+   status.textContent = '公開テストサーバーでの試作は20件までです。21件以上は専用OSRMを指定してください。';
+   return;
+ }
+ const key = roadRouteKey(routeStart, items);
+ const points = [routeStart, ...items.map(item => item.location)];
+ const coordinates = publicEndpoint
+   ? points.map(([lat, lng]) => lng.toFixed(6) + ',' + lat.toFixed(6)).join(';')
+   : 'polyline6(' + encodeURIComponent(encodeRoadCoordinates(points)) + ')';
+ const button = $('roadRoute');
+ button.disabled = true;
+ status.textContent = '道路の走行時間を取得しています…';
+ try {
+   endpoint.pathname = (endpoint.pathname.endsWith('/') ? endpoint.pathname.slice(0, -1) : endpoint.pathname) + '/table/v1/driving/' + coordinates;
+   endpoint.searchParams.set('annotations', 'duration');
+   const response = await fetch(endpoint, {signal:AbortSignal.timeout(publicEndpoint ? 15000 : 60000)});
+   if (response.status === 414) throw Error('接続先が長いリクエストを受け付けません。専用サーバーの設定を確認してください。');
+   const result = await response.json();
+   if (result.code === 'TooBig') throw Error('接続先の地点数上限を超えました。専用OSRMの max-table-size を確認してください。');
+   if (!response.ok || result.code !== 'Ok') throw Error('車の経路を取得できませんでした。');
+   if (key !== roadRouteKey(routeStart, db.today.items.filter(item => item.status !== '配達完了' && validLocation(item.location)))) {
+     status.textContent = '出発地点または配達先が変わりました。もう一度提案してください。';
+     return;
+   }
+   roadSuggestion = {key, ...orderByDriveTime(result.durations, items)};
+   status.textContent = '';
+   updateDeliveryMap(true);
+ } catch (error) {
+   status.textContent = error instanceof TypeError || error.name === 'TimeoutError'
+     ? '接続できませんでした。接続先や通信を確認してください。' : error.message;
+ } finally { button.disabled = false; }
+};
+function renderDeliveryRoute(fit) {
+ const available = !demoVisible && !pendingLocation;
+ const visible = available && (choosingRouteStart || routeStart !== null);
+ $('chooseRouteStart').classList.toggle('hidden', !available);
+ $('clearRoute').classList.toggle('hidden', !visible);
+ $('deliveryRoute').classList.toggle('hidden', !visible);
+ if (!visible) return;
+ const list = $('routeStops');
+ list.replaceChildren();
+ const status = $('routeStatus');
+ if (choosingRouteStart) {
+   status.textContent = '出発地点を地図上でタップしてください。';
+   return;
+ }
+ const eligible = db.today.items.filter(item => item.status !== '配達完了' && validLocation(item.location));
+ const road = roadSuggestion?.key === roadRouteKey(routeStart, eligible) ? roadSuggestion : null;
+ const ordered = routeMode === 'manual' ? eligible : (road ? road.ordered : suggestDeliveryOrder(routeStart, eligible));
+ const unlocated = db.today.items.filter(item => item.status !== '配達完了' && !validLocation(item.location)).length;
+ status.textContent = (routeMode === 'manual' ? '手動で設定した順番：' : road ? '道路の走行時間で提案（合計約' + Math.ceil(road.seconds / 60) + '分）：' : '直線距離で近い順に仮提案：') + ordered.length + '件 ／ 位置未設定：' + unlocated + '件。配達完了は対象外です。破線は訪問順を示します。';
+ if (!ordered.length) return;
+ const points = [routeStart, ...ordered.map(item => item.location)];
+ L.polyline(points, {color:'#5b21b6', dashArray:'6 7', weight:3, interactive:false}).addTo(deliveryPins).bringToBack();
+ const startLabel = document.createElement('span');
+ startLabel.textContent = '出発地点';
+ L.circleMarker(routeStart, {radius:6,color:'#5b21b6',fillOpacity:1}).addTo(deliveryPins).bindTooltip(startLabel);
+ for (const item of ordered) {
+   const row = document.createElement('li');
+   row.className = 'route-stop';
+   row.dataset.stopId = String(item.id);
+   row.textContent = [item.address, item.building, item.room, item.status].filter(Boolean).join(' ／ ');
+   const nav = document.createElement('a');
+   nav.href = drivingDirectionsUrl(item);
+   nav.target = '_blank';
+   nav.rel = 'noopener noreferrer';
+   nav.textContent = item === ordered[0] ? '次の配達先へ車ナビ' : '車ナビ';
+   row.append(document.createElement('br'), nav);
+   if (routeMode === 'manual') {
+    const controls = document.createElement('div'); controls.className = 'route-controls';
+    const handle = document.createElement('button'); handle.type = 'button';handle.className = 'route-handle';
+    handle.textContent = '☰'; handle.setAttribute('aria-label','押さえて配達順をドラッグ');
+    attachManualDrag(handle,row,item.id); controls.append(handle);
+    for (const [label, delta] of [['↑ 上へ', -1], ['↓ 下へ', 1]]) {
+      const button=document.createElement('button');button.type='button';button.className='route-small';button.textContent=label;
+      button.disabled=(delta===-1 && item===ordered[0])||(delta===1 && item===ordered[ordered.length-1]);
+      button.onclick=()=>moveManualStop(item.id,delta);controls.append(button);
+    }
+    row.append(controls);
+   }
+   list.append(row);
+ }
+ if (fit) deliveryMap.fitBounds(points, {padding:[24,24],maxZoom:17});
+}
+$('chooseRouteStart').onclick = () => {
+ routeStart = null;
+ choosingRouteStart = true;
+ updateDeliveryMap();
+};
+$('clearRoute').onclick = () => {
+ routeStart = null;
+ choosingRouteStart = false;
+ updateDeliveryMap();
+};
+function clearMapCandidate() {
+ lookupSequence++;
+ mapCandidate = null;
+ $('findMapLocation').disabled = false;
+ $('mapLookupStatus').textContent = '';
+}
+function addressCandidate(result) {
+ const point = result?.point;
+ const location = [point?.lat, point?.lng];
+ if (result?.pref !== '福岡県' || result.city !== '宗像市' ||
+     point?.level < 3 || !Number.isFinite(point?.level) || !validLocation(location)) return null;
+ return {location, level: point.level, label: [result.pref, result.city, result.town, result.addr].filter(Boolean).join('')};
+}
+$('findMapLocation').onclick = async () => {
+ const item = pendingLocation;
+ if (!item) return;
+ clearMapCandidate();
+ updateDeliveryMap();
+ const request = lookupSequence;
+ $('findMapLocation').disabled = true;
+ const status = $('mapLookupStatus');
+ status.textContent = '住所から位置を探しています…';
+ try {
+   const {normalize} = await import('https://cdn.jsdelivr.net/npm/@geolonia/normalize-japanese-addresses@3.1.3/+esm');
+   const address = item.address.trim();
+   const query = address.startsWith('福岡県') ? address : address.startsWith('宗像市')
+     ? '福岡県' + address : '福岡県宗像市' + address;
+   const candidate = addressCandidate(await normalize(query));
+   if (request !== lookupSequence || pendingLocation !== item || !db.today.items.includes(item)) return;
+   if (!candidate) {
+     status.textContent = '宗像市内の候補が見つかりませんでした。地図をタップして位置を指定できます。';
+     return;
+   }
+   mapCandidate = candidate;
+   deliveryMap.setView(candidate.location, candidate.level >= 8 ? 18 : 15);
+   updateDeliveryMap();
+   status.textContent = candidate.label + ' ／ ' + (candidate.level >= 8
+     ? '番地付近の候補です。地図で位置を確認してください。'
+     : '町名・丁目の代表点です。実際の配達先を地図上でタップしてください。');
+ } catch {
+   if (request === lookupSequence) status.textContent = '住所データを読み込めませんでした。地図をタップして位置を指定できます。';
+ } finally {
+   if (request === lookupSequence) $('findMapLocation').disabled = false;
+ }
+};
+$('saveMapCandidate').onclick = () => {
+ if (mapCandidate?.level >= 8) saveDeliveryPosition(mapCandidate.location);
+};
+function updateDeliveryMap(fit = false) {
+ if (!deliveryMap || $('deliveryMapPanel').classList.contains('hidden')) return;
+ deliveryPins.clearLayers();
+ const items = demoVisible ? mapSamples : db.today.items.filter(item => validLocation(item.location));
+ const groups = new Map();
+ for (const item of items) {
+   const key = item.location.join(',');
+   if (!groups.has(key)) groups.set(key, []);
+   groups.get(key).push(item);
+ }
+ for (const group of groups.values()) {
+   const content = document.createElement('div');
+   for (const item of group) {
+     const row = document.createElement('div');
+     row.textContent = [item.address, item.building, item.room, item.status].filter(Boolean).join(' ／ ');
+     content.append(row);
+   }
+   const colors = new Set(group.map(item => deliveryColors[item.status]));
+   L.circleMarker(group[0].location, {
+     radius: group.length > 1 ? 11 : 8, color: 'white', weight: 2,
+     fillColor: colors.size === 1 ? [...colors][0] : '#475569', fillOpacity: 1
+   }).addTo(deliveryPins).bindPopup(content);
+ }
+ if (mapCandidate && pendingLocation) {
+   L.circleMarker(mapCandidate.location, {radius:11,color:'#5b21b6',weight:3,fillOpacity:0.35,interactive:false}).addTo(deliveryPins);
+ }
+ $('findMapLocation').classList.toggle('hidden', !pendingLocation);
+ $('saveMapCandidate').classList.toggle('hidden', !(pendingLocation && mapCandidate?.level >= 8));
+ if (fit && items.length) deliveryMap.fitBounds(items.map(item => item.location), {padding:[24,24], maxZoom:17});
+ renderDeliveryRoute(fit);
+ $('cancelMapLocation').classList.toggle('hidden', !pendingLocation);
+ $('mapDemo').textContent = demoVisible ? '今日の配達先に戻る' : 'テストピンを表示';
+ $('deliveryMapStatus').textContent = pendingLocation
+   ? pendingLocation.address + 'の位置を地図上でタップしてください。'
+   : demoVisible ? '架空のテスト地点4件を表示中です。'
+   : '位置設定済み ' + items.length + '件 ／ 位置未設定 ' + (db.today.items.length - items.length) + '件';
+}
+function showDeliveryMap() {
+ $('deliveryMapPanel').classList.remove('hidden');
+ if (!window.L) {
+   $('deliveryMapStatus').textContent = '地図を読み込めませんでした。通信を確認して再読み込みしてください。';
+   return false;
+ }
+ if (!deliveryMap) {
+   deliveryMap = L.map('deliveryMapCanvas', {scrollWheelZoom:false}).setView([33.81,130.55], 12);
+   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+     maxZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+   }).addTo(deliveryMap);
+   deliveryPins = L.layerGroup().addTo(deliveryMap);
+   deliveryMap.on('click', ({latlng}) => {
+     const location = [latlng.lat, latlng.lng];
+     if (choosingRouteStart && !demoVisible && !pendingLocation) {
+       if (!validLocation(location)) return;
+       routeStart = location;
+       choosingRouteStart = false;
+       updateDeliveryMap(true);
+       return;
+     }
+     saveDeliveryPosition(location);
+   });
+ }
+ deliveryMap.invalidateSize();
+ return true;
+}
+function saveDeliveryPosition(location) {
+  if (!pendingLocation || recoveryBlocked || !db.today.items.includes(pendingLocation)) return;
+  if (!validLocation(location) || !confirm(pendingLocation.address + 'の位置をここに保存し、次回の配達にも使用しますか？')) return;
+  const previous = pendingLocation.location;
+  pendingLocation.location = location;
+  const undoRemember = rememberDeliveryLocation(pendingLocation, location);
+  if (!save()) {
+    undoRemember();
+    pendingLocation.location = previous;
+    $('deliveryMapStatus').textContent = '位置を保存できませんでした。';
+    return;
+  }
+  pendingLocation = null;
+  clearMapCandidate();
+  updateDeliveryMap();
+}
+$('openDeliveryMap').onclick = () => {
+ if (!$('deliveryMapPanel').classList.contains('hidden')) {
+   pendingLocation = null;
+   clearMapCandidate();
+   $('deliveryMapPanel').classList.add('hidden');
+   $('openDeliveryMap').textContent = '今日の配達地図';
+   return;
+ }
+ if (showDeliveryMap()) updateDeliveryMap(true);
+ $('openDeliveryMap').textContent = '配達地図を閉じる';
+};
+$('mapDemo').onclick = () => {
+ if (!showDeliveryMap()) return;
+ pendingLocation = null;
+ clearMapCandidate();
+ choosingRouteStart = false;
+ demoVisible = !demoVisible;
+ updateDeliveryMap(true);
+};
+$('cancelMapLocation').onclick = () => { pendingLocation = null; clearMapCandidate(); updateDeliveryMap(); };
+$('todayList').addEventListener('click', event => {
+ const button = event.target.closest('[data-map-location]');
+ if (!button) return;
+ if (recoveryBlocked) { alert('保存保護中です。'); return; }
+ const item = db.today.items.find(entry => entry.id === button.dataset.mapLocation);
+ if (!item || !showDeliveryMap()) return;
+ demoVisible = false;
+ clearMapCandidate();
+ choosingRouteStart = false;
+ pendingLocation = item;
+ $('openDeliveryMap').textContent = '配達地図を閉じる';
+ updateDeliveryMap();
+ if (validLocation(item.location)) deliveryMap.setView(item.location, 17);
+ $('deliveryMapPanel').scrollIntoView({block:'start'});
+});
+// Carry forward positions saved by the first map prototype.
+for (const item of db.today.items) {
+ if (validLocation(item.location) && !rememberedLocation(item)) {
+   rememberDeliveryLocation(item, item.location);
+ }
+}
+new MutationObserver(() => {
+ if (pendingLocation && !db.today.items.includes(pendingLocation)) {
+   pendingLocation = null;
+   clearMapCandidate();
+ }
+ updateDeliveryMap();
+}).observe($('todayList'), {childList:true});
+</script><script>
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  // 検証ページではサービスワーカーを新規登録しない
+}
+</script>
+<script>
+(()=>{'use strict';
+const base='https://tciymibhdqgskaiqnihu.supabase.co';
+const key='sb_publishable_oAXxXagTHl5E1VU-53ah-Q_oktxOJql';
+const el=id=>document.getElementById(id);
+const form=el('cloudForm'), msg=el('cloudResult'), btn=el('cloudLogin'), pw=el('cloudPassword');
+async function request(path,options){const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),20000);try{return await fetch(base+path,{...options,signal:ctrl.signal,cache:'no-store'});}finally{clearTimeout(timer);}}
+form.addEventListener('submit',async e=>{e.preventDefault();btn.disabled=true;msg.textContent='接続中…';let token;try{const body=JSON.stringify({email:el('cloudEmail').value.trim(),password:pw.value});pw.value='';const r=await request('/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:key,'Content-Type':'application/json'},body});const j=await r.json();if(!r.ok||!j.access_token)throw new Error('ログイン失敗 HTTP '+r.status+'：'+(j.error_code||j.code||'認証情報・通信状態を確認してください'));token=j.access_token;msg.textContent='ログイン成功。件数確認中…';const c=await request('/rest/v1/address_master?select=id',{method:'HEAD',headers:{apikey:key,Authorization:'Bearer '+token,Prefer:'count=exact'}});if(!c.ok)throw new Error('ログイン成功、住所件数取得失敗 HTTP '+c.status);const count=c.headers.get('content-range')?.split('/').pop();if(!count||!/^\d+$/.test(count))throw new Error('ログイン成功、住所件数は確認できません');msg.textContent='ログイン成功\nクラウド住所：'+count+'件\n端末内データは変更していません。';}catch(err){msg.textContent=err.name==='AbortError'?'通信がタイムアウトしました。再試行してください。':String(err.message||err);}finally{if(token){try{const r=await request('/auth/v1/logout?scope=local',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+token}});msg.textContent+=r.ok?'\nテスト用セッション終了。':'\nサーバー側のセッション終了は未確認。';}catch{msg.textContent+='\nサーバー側のセッション終了は未確認。';}}token=null;pw.value='';btn.disabled=false;}});
+})();
+</script>
+</body>
+</html>
